@@ -20,60 +20,103 @@ from analyze_trends import (
 )
 
 
-def call_github_models(prompt: str, context: str = "") -> Optional[str]:
+def call_ai_api(prompt: str, context: str = "") -> Optional[str]:
     """
-    调用 GitHub Models API
-    文档: https://github.com/marketplace/models
+    调用 AI API（支持多种服务）
+    优先级: GitHub Models > OpenAI > 其他
     """
     try:
-        # 从环境变量获取配置
+        # 检查配置的 AI 服务
         github_token = os.environ.get("GITHUB_TOKEN", "")
-        model_name = os.environ.get("GITHUB_MODEL", "gpt-4o")  # 默认使用 gpt-4o
+        openai_key = os.environ.get("OPENAI_API_KEY", "")
+        model_name = os.environ.get("AI_MODEL", "gpt-4o")
         
-        if not github_token:
-            print("⚠️  未配置 GITHUB_TOKEN，无法使用 AI 分析")
-            return None
+        # 构建消息
+        messages = [
+            {
+                "role": "system",
+                "content": "你是一位专业的投资分析师和市场趋势专家，擅长从热点新闻中发现投资机会。"
+            },
+            {
+                "role": "user",
+                "content": f"{prompt}\n\n数据:\n{context}"
+            }
+        ]
         
-        # GitHub Models API 端点
-        api_url = f"https://models.inference.ai.azure.com/chat/completions"
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {github_token}"
-        }
-        
-        # 构建请求
-        payload = {
-            "model": model_name,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "你是一位专业的投资分析师和市场趋势专家，擅长从热点新闻中发现投资机会。"
-                },
-                {
-                    "role": "user",
-                    "content": f"{prompt}\n\n数据:\n{context}"
+        # 尝试 GitHub Models
+        if github_token:
+            try:
+                print(f"正在调用 GitHub Models ({model_name})...")
+                # GitHub Models API 端点（官方文档）
+                # 文档: https://docs.github.com/zh/github-models/quickstart
+                api_url = "https://models.github.ai/inference/chat/completions"
+                
+                # 模型名称需要加上提供商前缀
+                full_model_name = f"openai/{model_name}" if not model_name.startswith("openai/") else model_name
+                
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {github_token}"
                 }
-            ],
-            "temperature": 0.7,
-            "max_tokens": 2000
-        }
+                
+                payload = {
+                    "messages": messages,
+                    "model": full_model_name,
+                    "temperature": 0.7,
+                    "max_tokens": 2000,
+                    "top_p": 1.0
+                }
+                
+                response = requests.post(api_url, headers=headers, json=payload, timeout=60)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result["choices"][0]["message"]["content"]
+                    print("✓ AI 分析完成 (GitHub Models)")
+                    return ai_response
+                else:
+                    print(f"⚠️  GitHub Models 不可用 (状态码: {response.status_code})")
+                    if response.status_code == 401:
+                        print(f"   提示: 需要访问 https://github.com/marketplace/models 启用 GitHub Models")
+                        print(f"   或配置 OPENAI_API_KEY 作为备选方案")
+                    else:
+                        print(f"   错误: {response.text[:200]}")
+            except Exception as e:
+                print(f"⚠️  GitHub Models 失败: {e}")
         
-        print(f"正在调用 GitHub Models ({model_name})...")
-        response = requests.post(api_url, headers=headers, json=payload, timeout=60)
+        # 尝试 OpenAI
+        if openai_key:
+            try:
+                print(f"正在调用 OpenAI API ({model_name})...")
+                api_url = "https://api.openai.com/v1/chat/completions"
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {openai_key}"
+                }
+                payload = {
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 2000
+                }
+                
+                response = requests.post(api_url, headers=headers, json=payload, timeout=60)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result["choices"][0]["message"]["content"]
+                    print("✓ AI 分析完成 (OpenAI)")
+                    return ai_response
+                else:
+                    print(f"⚠️  OpenAI 调用失败: {response.status_code}")
+            except Exception as e:
+                print(f"⚠️  OpenAI 失败: {e}")
         
-        if response.status_code == 200:
-            result = response.json()
-            ai_response = result["choices"][0]["message"]["content"]
-            print("✓ AI 分析完成")
-            return ai_response
-        else:
-            print(f"✗ API 调用失败: {response.status_code}")
-            print(f"错误信息: {response.text}")
-            return None
+        print("✗ 所有 AI 服务均不可用")
+        return None
             
     except Exception as e:
-        print(f"✗ 调用 GitHub Models 失败: {e}")
+        print(f"✗ AI 调用失败: {e}")
         return None
 
 
@@ -176,7 +219,7 @@ def generate_ai_report(analysis: Dict) -> str:
 """
     
     # 调用 AI
-    ai_insights = call_github_models(prompt, context)
+    ai_insights = call_ai_api(prompt, context)
     
     # 生成报告
     report = []

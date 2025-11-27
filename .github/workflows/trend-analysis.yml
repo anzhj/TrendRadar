@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  models: read  # 必须包含，用于访问 GitHub Models
 
 jobs:
   ai-analysis:
@@ -50,11 +51,11 @@ jobs:
 
       - name: Run AI trend analysis with GitHub Models
         env:
-          # GitHub Models API
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_MODEL: "gpt-4o"
+          # GitHub Models 配置
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub Actions 自动提供
+          AI_MODEL: "gpt-4o"  # 模型名称
           
-          # 通知渠道
+          # 通知渠道（可选）
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
           WEWORK_WEBHOOK_URL: ${{ secrets.WEWORK_WEBHOOK_URL }}

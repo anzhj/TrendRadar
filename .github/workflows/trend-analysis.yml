@@ -1,0 +1,84 @@
+name: AI Trend Analysis with GitHub Models
+
+on:
+  schedule:
+    # 每天 8:30 和 12:30 运行（UTC时间，需要减8小时）
+    # 8:30 北京时间 = 0:30 UTC
+    # 12:30 北京时间 = 4:30 UTC
+    - cron: "30 0 * * *"  # 每天 8:30 北京时间
+    - cron: "30 4 * * *"  # 每天 12:30 北京时间
+  workflow_dispatch:  # 允许手动触发
+
+permissions:
+  contents: write
+
+jobs:
+  ai-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 获取完整历史
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify configuration
+        run: |
+          echo "🔍 检查配置..."
+          
+          if [ ! -f config/config.yaml ]; then
+            echo "❌ 配置文件不存在"
+            exit 1
+          fi
+          
+          if [ ! -d output ]; then
+            echo "❌ output 目录不存在"
+            exit 1
+          fi
+          
+          echo "✅ 配置检查通过"
+
+      - name: Run AI trend analysis with GitHub Models
+        env:
+          # GitHub Models API
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_MODEL: "gpt-4o"
+          
+          # 通知渠道
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
+          WEWORK_WEBHOOK_URL: ${{ secrets.WEWORK_WEBHOOK_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BARK_URL: ${{ secrets.BARK_URL }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          
+          ENABLE_NOTIFICATION: "true"
+        run: |
+          echo "🤖 开始 AI 增强热点趋势分析..."
+          python analyze_with_github_models.py
+
+      - name: Commit results
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add -A
+          git diff --quiet && git diff --staged --quiet || (git commit -m "AI analysis at $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M')" && git push)
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "✅ AI 分析完成"
+          echo "时间: $(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S')"

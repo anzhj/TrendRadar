@@ -493,31 +493,7 @@ def generate_investment_advice(analysis: Dict) -> str:
 
 def format_report(analysis: Dict) -> str:
     """格式化分析报告"""
-    # 计算总新闻数
-    total_news = 0
-    for item in analysis.get('new_topics', []):
-        total_news += item.get('total_count', 0)
-    for item in analysis.get('trending_up', []):
-        total_news += item.get('total_count', 0)
-    for item in analysis.get('hot_topics', []):
-        total_news += item.get('total_count', 0)
-    for item in analysis.get('trending_down', []):
-        total_news += item.get('total_count', 0)
-    
-    # 获取当前时间
-    now = get_beijing_time()
-    
     report = []
-    report.append("TrendRadar AI 投资建议")
-    report.append("")
-    report.append(f"总新闻数： {total_news}")
-    report.append("")
-    report.append(f"时间： {now.strftime('%Y-%m-%d %H:%M:%S')}")
-    report.append("")
-    report.append(f"类型： AI 投资分析报告")
-    report.append("")
-    report.append("---")
-    report.append("")
     report.append("=" * 50)
     report.append("📊 热点趋势分析报告")
     report.append("=" * 50)
@@ -538,19 +514,21 @@ import requests
 import time
 
 
-def send_analysis_report(report_text: str):
+def send_analysis_report(report_text: str, analysis: Dict = None):
     """发送分析报告到各个通知渠道"""
     success_count = 0
     
-    # 从报告文本中提取总新闻数
+    # 计算总新闻数
     total_news = 0
-    for line in report_text.split('\n'):
-        if '总新闻数：' in line:
-            try:
-                total_news = int(line.split('总新闻数：')[1].strip().split()[0])
-            except:
-                pass
-            break
+    if analysis:
+        for item in analysis.get('new_topics', []):
+            total_news += item.get('total_count', 0)
+        for item in analysis.get('trending_up', []):
+            total_news += item.get('total_count', 0)
+        for item in analysis.get('hot_topics', []):
+            total_news += item.get('total_count', 0)
+        for item in analysis.get('trending_down', []):
+            total_news += item.get('total_count', 0)
     
     # 获取当前时间
     now = get_beijing_time()
@@ -724,7 +702,7 @@ def main():
     # 发送通知
     if os.environ.get("ENABLE_NOTIFICATION", "true").lower() in ("true", "1"):
         print("\n正在发送通知...")
-        send_analysis_report(report)
+        send_analysis_report(report, analysis)
     else:
         print("\n通知功能已禁用")
 

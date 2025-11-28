@@ -214,16 +214,6 @@ def generate_ai_report(analysis: Dict) -> str:
     
     # 生成报告
     report = []
-    report.append("TrendRadar AI 投资建议")
-    report.append("")
-    report.append(f"总新闻数： {total_news}")
-    report.append("")
-    report.append(f"时间： {now.strftime('%Y-%m-%d %H:%M:%S')}")
-    report.append("")
-    report.append(f"类型： AI 投资分析报告")
-    report.append("")
-    report.append("---")
-    report.append("")
     report.append("=" * 60)
     report.append("📊 AI 增强热点趋势分析报告")
     report.append("=" * 60)
@@ -364,7 +354,7 @@ def main():
     # 发送通知
     if os.environ.get("ENABLE_NOTIFICATION", "true").lower() in ("true", "1"):
         print("\n正在发送通知...")
-        send_analysis_report(report)
+        send_analysis_report(report, analysis)
     
     print("\n✅ 分析完成！")
 

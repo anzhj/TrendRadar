@@ -2,10 +2,11 @@ name: AI Trend Analysis with GitHub Models
 
 on:
   schedule:
-    # 每天 8:30 和 12:30 运行（UTC时间，需要减8小时）
-    # 8:30 北京时间 = 0:30 UTC
+    # 每天 7:00 和 12:30 运行（UTC时间，需要减8小时）
+    # 7:00 北京时间 = 23:00 UTC (前一天)
     # 12:30 北京时间 = 4:30 UTC
-    - cron: "30 0 * * *"  # 每天 8:30 北京时间
+    # 注意：GitHub Actions 定时任务可能延迟 3-30 分钟，这是正常现象
+    - cron: "0 23 * * *"  # 每天 7:00 北京时间
     - cron: "30 4 * * *"  # 每天 12:30 北京时间
   workflow_dispatch:  # 允许手动触发
 

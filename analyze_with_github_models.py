@@ -6,9 +6,11 @@
 
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import pytz
 import requests
 
 # 导入基础分析功能
@@ -197,8 +199,31 @@ def generate_ai_report(analysis: Dict) -> str:
     # 调用 GitHub Models
     ai_insights = call_github_models(prompt, context)
     
+    # 计算总新闻数
+    total_news = 0
+    if analysis.get("new_topics"):
+        total_news += len(analysis["new_topics"])
+    if analysis.get("trending_up"):
+        total_news += len(analysis["trending_up"])
+    if analysis.get("hot_topics"):
+        total_news += len(analysis["hot_topics"])
+    
+    # 获取当前时间
+    beijing_tz = pytz.timezone('Asia/Shanghai')
+    now = datetime.now(beijing_tz)
+    
     # 生成报告
     report = []
+    report.append("TrendRadar AI 投资建议")
+    report.append("")
+    report.append(f"**总新闻数：** {total_news}")
+    report.append("")
+    report.append(f"**时间：** {now.strftime('%Y-%m-%d %H:%M:%S')}")
+    report.append("")
+    report.append(f"**类型：** AI 投资分析报告")
+    report.append("")
+    report.append("---")
+    report.append("")
     report.append("=" * 60)
     report.append("📊 AI 增强热点趋势分析报告")
     report.append("=" * 60)
